@@ -139,6 +139,10 @@ show_menu() {
     echo -e "     ${TEAL}18)${NC} ${WHITE}Disk Usage Analyzer${NC}"
     echo -e "     ${TEAL}19)${NC} ${WHITE}Package Outdated Checker${NC}"
     echo -e "     ${TEAL}20)${NC} ${WHITE}SSL Certificate Checker${NC}"
+    echo -e "     ${TEAL}21)${NC} ${WHITE}Traceroute (Formatted + Latency Spike Marking)${NC}"
+    echo -e "     ${TEAL}22)${NC} ${WHITE}Wi-Fi Details${macos_tag}"
+    echo -e "     ${TEAL}23)${NC} ${WHITE}System Information Summary${NC}"
+    echo -e "     ${TEAL}24)${NC} ${WHITE}Top Processes (CPU/Memory)${NC}"
     echo ""
     echo -e "${YELLOW}${BOLD}  ⚡ Quick Actions${NC}"
     echo -e "     ${TEAL}a)${NC} ${WHITE}Clean All Caches${NC}"
@@ -291,6 +295,10 @@ show_help() {
     echo -e "  ${CYAN}tool disk${NC}         Analyze disk usage"
     echo -e "  ${CYAN}tool outdated${NC}     Check outdated packages"
     echo -e "  ${CYAN}tool ssl <domain>${NC} Check SSL certificate"
+    echo -e "  ${CYAN}tool traceroute <host> [max_hops]${NC} Formatted traceroute + RTT spike marking"
+    echo -e "  ${CYAN}tool wifi${NC}         Show current Wi-Fi details ${GRAY}(macOS only)${NC}"
+    echo -e "  ${CYAN}tool sysinfo${NC}      Show CPU/memory/disk/GPU/OS/battery summary"
+    echo -e "  ${CYAN}tool topproc [options]${NC} Show top CPU/memory processes"
     echo -e "  ${CYAN}tool all${NC}          Clean all caches"
     echo -e "  ${CYAN}tool help${NC}         Show help"
     echo ""
@@ -364,6 +372,20 @@ cli_mode() {
             shift
             bash "$TOOL_DIR/ssl_check.sh" "$@"
             ;;
+        traceroute|trace|tr)
+            shift
+            bash "$TOOL_DIR/traceroute_wrapper.sh" "$@"
+            ;;
+        wifi)
+            bash "$TOOL_DIR/wifi_info.sh"
+            ;;
+        sysinfo|system|info)
+            bash "$TOOL_DIR/sysinfo.sh"
+            ;;
+        topproc|top)
+            shift
+            bash "$TOOL_DIR/top_processes.sh" "$@"
+            ;;
         all)
             clean_all
             ;;
@@ -391,6 +413,10 @@ cli_mode() {
             echo "  disk      Analyze disk usage"
             echo "  outdated  Check outdated packages"
             echo "  ssl       Check SSL certificate"
+            echo "  traceroute Formatted traceroute + latency spike marking"
+            echo "  wifi      Show current Wi-Fi details (macOS only)"
+            echo "  sysinfo   Show CPU/memory/disk/GPU/OS/battery summary"
+            echo "  topproc   Show top CPU/memory processes"
             echo "  all       Clean all caches"
             echo "  help      Show help"
             echo ""
@@ -507,6 +533,49 @@ interactive_mode() {
                 else
                     bash "$TOOL_DIR/ssl_check.sh"
                 fi
+                echo ""
+                read -p "Press Enter to return to menu..."
+                ;;
+            21)
+                echo ""
+                read -p "Enter host to trace (hostname or IP): " host
+                read -p "Maximum hops (default 30): " max_hops
+                echo ""
+                if [ -n "$host" ] && [ -n "$max_hops" ]; then
+                    bash "$TOOL_DIR/traceroute_wrapper.sh" "$host" "$max_hops"
+                elif [ -n "$host" ]; then
+                    bash "$TOOL_DIR/traceroute_wrapper.sh" "$host"
+                else
+                    bash "$TOOL_DIR/traceroute_wrapper.sh"
+                fi
+                echo ""
+                read -p "Press Enter to return to menu..."
+                ;;
+            22)
+                run_script "wifi_info.sh"
+                ;;
+            23)
+                run_script "sysinfo.sh"
+                ;;
+            24)
+                echo ""
+                read -p "Sort by [c]pu or [m]emory? (default: c): " sort_key
+                read -p "Top N processes (default: 15): " top_n
+                read -p "Watch mode? (y/N): " watch_mode
+                echo ""
+
+                topproc_args=()
+                if [[ "$sort_key" =~ ^[Mm]$ ]]; then
+                    topproc_args+=("-m")
+                fi
+                if [ -n "$top_n" ]; then
+                    topproc_args+=("-n" "$top_n")
+                fi
+                if [[ "$watch_mode" =~ ^[Yy]$ ]]; then
+                    topproc_args+=("-w")
+                fi
+
+                bash "$TOOL_DIR/top_processes.sh" "${topproc_args[@]}"
                 echo ""
                 read -p "Press Enter to return to menu..."
                 ;;

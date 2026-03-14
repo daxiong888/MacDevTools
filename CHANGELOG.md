@@ -13,6 +13,7 @@
 - TUI menu expanded to 20 items (items 11-12 are Maven/Gradle; original system tools renumbered 13-16; new tools at 17-20).
 - `clean_all` function updated to include Maven and Gradle (now 10 steps).
 - Version label updated to v1.2.0.
+- Integrated `tool traceroute`, `tool wifi`, `tool sysinfo`, and `tool topproc` into interactive menu, CLI help, installer file set, and README command lists.
 - Documentation updated.
 
 ## [1.1.0] - 2026-02-20

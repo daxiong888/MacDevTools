@@ -70,6 +70,10 @@
 | 💾 | 磁盘分析 | 分析磁盘占用热点与最大文件 |
 | 📦 | 过期包检查 | 汇总检查所有包管理器的过期包 |
 | 🔐 | SSL 检查 | 检查证书到期时间、SAN、TLS 版本 |
+| 🛤️ | Traceroute | 带格式化输出并标注延迟异常跳 |
+| 📶 | Wi-Fi 信息 | 当前 Wi-Fi 信号、频段、BSSID、信道等详情（macOS） |
+| 🖥️ | 系统信息 | 汇总 CPU、内存、磁盘、GPU、macOS 版本、电池健康度 |
+| 🔥 | 进程排行 | 展示 CPU/内存占用最高的进程，支持按指标排序 |
 
 ## 🚀 安装
 
@@ -160,6 +164,10 @@ tool logs          # 清理日志文件
 tool disk          # 分析磁盘占用
 tool outdated      # 检查各包管理器的过期包
 tool ssl github.com  # 检查 SSL 证书
+tool traceroute github.com  # 格式化 traceroute + 延迟异常跳标注
+tool wifi          # 查看当前 Wi-Fi 详情（macOS）
+tool sysinfo       # 查看 CPU/内存/磁盘/GPU/系统/电池汇总
+tool topproc -m    # 按内存排序查看进程排行
 
 # 快捷操作
 tool all           # 一键清理所有缓存

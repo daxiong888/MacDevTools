@@ -70,6 +70,10 @@
 | 💾 | Disk Usage | Analyze disk hotspots & largest files |
 | 📦 | Outdated | Check outdated packages across all managers |
 | 🔐 | SSL Check | Inspect SSL cert expiry, SANs, TLS version |
+| 🛤️ | Traceroute | Formatted traceroute with latency anomaly hop marking |
+| 📶 | Wi-Fi Info | Current Wi-Fi signal, band, BSSID, channel details (macOS) |
+| 🖥️ | Sysinfo | CPU, memory, disk, GPU, macOS version, battery health summary |
+| 🔥 | Top Processes | Top CPU/memory processes with metric sorting |
 
 ## 🚀 Installation
 
@@ -160,6 +164,10 @@ tool logs          # Clean log files
 tool disk          # Analyze disk usage
 tool outdated      # Check outdated packages
 tool ssl github.com  # Check SSL certificate
+tool traceroute github.com  # Formatted traceroute + latency spike marking
+tool wifi          # Show current Wi-Fi details (macOS)
+tool sysinfo       # Show CPU/memory/disk/GPU/OS/battery summary
+tool topproc -m    # Top processes sorted by memory
 
 # Quick Actions
 tool all           # One-click clean all caches

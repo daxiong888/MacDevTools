@@ -55,14 +55,18 @@ mkdir -p "$LIBDIR" 2>/dev/null || sudo mkdir -p "$LIBDIR"
 install_files() {
     local dst="$1"
     cp clean_*.sh "$dst/"
-    cp check_network.sh "$dst/"
-    cp port_killer.sh "$dst/"
-    cp dns_lookup.sh "$dst/"
-    cp fake_busy_build.sh "$dst/"
+    cp check_network.sh port_killer.sh dns_lookup.sh fake_busy_build.sh \
+       clean_logs.sh disk_usage.sh pkg_outdated.sh ssl_check.sh \
+       traceroute_wrapper.sh wifi_info.sh sysinfo.sh top_processes.sh "$dst/"
     chmod +x "$dst"/*.sh
 }
 
-install_files "$LIBDIR" 2>/dev/null || { sudo cp clean_*.sh check_network.sh port_killer.sh dns_lookup.sh fake_busy_build.sh "$LIBDIR/"; sudo chmod +x "$LIBDIR"/*.sh; }
+install_files "$LIBDIR" 2>/dev/null || {
+    sudo cp clean_*.sh check_network.sh port_killer.sh dns_lookup.sh fake_busy_build.sh \
+        clean_logs.sh disk_usage.sh pkg_outdated.sh ssl_check.sh \
+        traceroute_wrapper.sh wifi_info.sh sysinfo.sh top_processes.sh "$LIBDIR/"
+    sudo chmod +x "$LIBDIR"/*.sh
+}
 
 # Install launcher (tool resolves script dir dynamically at runtime)
 TOOL_LAUNCHER="$BINDIR/tool"
