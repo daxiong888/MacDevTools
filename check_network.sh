@@ -215,7 +215,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "   Download speed: ${SPEED_MB} MB/s"
     else
         warn "speedtest-cli not installed, skipping speed test"
-        echo "   Install: brew install speedtest-cli"
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            echo "   Install: brew install speedtest-cli"
+        else
+            echo "   Install: pip3 install speedtest-cli  or  apt install speedtest-cli"
+        fi
     fi
 fi
 
@@ -245,6 +249,11 @@ fi
 
 echo ""
 echo "💡 Tips:"
-echo "   - networksetup -listallhardwareports  List all network interfaces"
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    echo "   - networksetup -listallhardwareports  List all network interfaces"
+else
+    echo "   - ip link show                        List all network interfaces"
+    echo "   - nmcli device status                 Show network device status"
+fi
 echo "   - netstat -an | grep LISTEN           View listening ports"
 echo "   - traceroute google.com               Trace route to destination"
