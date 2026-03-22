@@ -77,6 +77,16 @@
 
 ## 🚀 Installation
 
+### Current Homebrew status
+
+`macdevtools` is currently distributed via tap.
+Use the following commands for now:
+
+```bash
+brew tap khakhasshi/tap
+brew install macdevtools
+```
+
 ### Install via Homebrew (Recommended)
 
 ```bash
@@ -91,6 +101,31 @@ brew install macdevtools
 ```
 
 After installation, run `tool` to start.
+
+## 🗑️ Uninstall
+
+### Homebrew uninstall (tap-based)
+
+```bash
+brew uninstall macdevtools
+brew untap khakhasshi/tap
+```
+
+### Uninstall via script
+
+```bash
+# Uninstall brew package only
+./uninstall.sh --brew
+
+# Uninstall manual-install files only
+./uninstall.sh --manual
+
+# Uninstall both (default)
+./uninstall.sh --all
+
+# Uninstall brew package and remove tap
+./uninstall.sh --brew --untap
+```
 
 ### Manual Install
 

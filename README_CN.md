@@ -77,6 +77,15 @@
 
 ## 🚀 安装
 
+### 当前 Homebrew 安装方式
+
+目前 `macdevtools` 通过 tap 分发，暂时请使用以下命令：
+
+```bash
+brew tap khakhasshi/tap
+brew install macdevtools
+```
+
 ### 通过 Homebrew 安装（推荐）
 
 ```bash
@@ -91,6 +100,31 @@ brew install macdevtools
 ```
 
 安装完成后，运行 `tool` 即可启动。
+
+## 🗑️ 卸载
+
+### 通过 Homebrew 卸载（tap 方式）
+
+```bash
+brew uninstall macdevtools
+brew untap khakhasshi/tap
+```
+
+### 使用卸载脚本
+
+```bash
+# 仅卸载 Homebrew 安装
+./uninstall.sh --brew
+
+# 仅卸载手动安装文件
+./uninstall.sh --manual
+
+# 同时卸载两者（默认）
+./uninstall.sh --all
+
+# 卸载 Homebrew 并移除 tap
+./uninstall.sh --brew --untap
+```
 
 ### 手动安装
 
