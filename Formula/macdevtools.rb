@@ -11,10 +11,6 @@ class Macdevtools < Formula
   def install
     libexec.install Dir["*.sh"]
     libexec.install "tool"
-
-    # Force TOOL_DIR to libexec for Homebrew installs
-    inreplace libexec/"tool", 'TOOL_DIR="$HOME/ShellTools"', "TOOL_DIR=\"#{libexec}\""
-
     bin.install_symlink libexec/"tool"
   end
 
