@@ -662,6 +662,9 @@ nano ~/.zshrc
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+- Contribution guide: [CONTRIBUTING.md](CONTRIBUTING.md)
+- PR template: [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md)
+
 1. Fork this repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
