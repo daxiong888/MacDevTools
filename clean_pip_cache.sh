@@ -3,20 +3,24 @@
 # pip Cache Cleanup Script
 # Clean pip download cache and temporary files
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "🐍 pip Cache Cleanup Tool"
 echo "========================="
 
 # Check if pip is installed
-if ! command -v pip3 &> /dev/null && ! command -v pip &> /dev/null; then
-    echo "❌ Error: pip is not installed"
+if ! command_exists pip3 && ! command_exists pip; then
+    fail "Error: pip is not installed"
     exit 1
 fi
 
 # Prefer pip3
 PIP_CMD="pip3"
-if ! command -v pip3 &> /dev/null; then
+if ! command_exists pip3; then
     PIP_CMD="pip"
 fi
 

@@ -3,14 +3,18 @@
 # Go Module Cache Cleanup Script
 # Clean Go module cache and build cache
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "🐹 Go Cache Cleanup Tool"
 echo "========================"
 
 # Check if Go is installed
-if ! command -v go &> /dev/null; then
-    echo "❌ Error: Go is not installed"
+if ! command_exists go; then
+    fail "Error: Go is not installed"
     exit 1
 fi
 

@@ -3,7 +3,11 @@
 # Fake Busy Build Simulator
 # Pretend to compile/build with realistic logs for focus mode.
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 MODE="${1:-build}"
 DURATION="${2:-45}"
@@ -30,19 +34,13 @@ case "$MODE" in
     build|compile|test)
         ;;
     *)
-        echo "Unknown mode: $MODE"
+        fail "Unknown mode: $MODE"
         echo "Supported modes: build, compile, test"
         exit 1
         ;;
 esac
 
-# Colors
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-GRAY='\033[0;90m'
-NC='\033[0m'
+# Colors defined in common.sh
 
 phases=(
     "Resolving dependencies"

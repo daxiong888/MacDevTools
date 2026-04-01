@@ -3,20 +3,24 @@
 # DNS Nameserver IPv4 Lookup
 # Query domain NS records and resolve their IPv4 addresses
 
-set -e
+set -euo pipefail
 
-if ! command -v dig >/dev/null 2>&1; then
-    echo "❌ dig is required (install bind-utils)."
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
+if ! command_exists dig; then
+    fail "dig is required (install bind-utils)."
     exit 1
 fi
 
-domain="$1"
+domain="${1:-}"
 if [ -z "$domain" ]; then
-    read -p "Enter domain to lookup: " domain
+    read -p "Enter domain to lookup: " domain || true
 fi
 
 if [ -z "$domain" ]; then
-    echo "❌ No domain provided, aborting."
+    fail "No domain provided, aborting."
     exit 1
 fi
 
@@ -27,7 +31,7 @@ domain="${domain%%:*}"
 domain="${domain// /}"
 
 if [[ ! $domain == *.* ]]; then
-    echo "❌ Invalid domain: $domain"
+    fail "Invalid domain: $domain"
     exit 1
 fi
 

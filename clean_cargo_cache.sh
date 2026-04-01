@@ -3,14 +3,18 @@
 # Cargo (Rust) Cache Cleanup Script
 # Clean Cargo registry, cache and build artifacts
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "🦀 Cargo (Rust) Cache Cleanup Tool"
 echo "=================================="
 
 # Check if Cargo is installed
-if ! command -v cargo &> /dev/null; then
-    echo "❌ Error: Cargo is not installed"
+if ! command_exists cargo; then
+    fail "Error: Cargo is not installed"
     exit 1
 fi
 
@@ -25,14 +29,7 @@ CARGO_REGISTRY="$CARGO_HOME/registry"
 CARGO_GIT="$CARGO_HOME/git"
 CARGO_BIN="$CARGO_HOME/bin"
 
-# Calculate directory size
-get_size() {
-    if [ -d "$1" ]; then
-        du -sh "$1" 2>/dev/null | cut -f1
-    else
-        echo "0B"
-    fi
-}
+# get_size() defined in common.sh
 
 # Show status before cleanup
 echo ""
@@ -52,7 +49,7 @@ if command -v cargo-cache &> /dev/null; then
 else
     echo "   ℹ️  cargo-cache not installed, using manual cleanup"
     echo ""
-    
+
     # 1. Clean registry cache (downloaded .crate files)
     CACHE_DIR="$CARGO_REGISTRY/cache"
     if [ -d "$CACHE_DIR" ]; then
@@ -60,7 +57,7 @@ else
         rm -rf "${CACHE_DIR:?}"/*
         echo "     ✅ Registry cache cleaned"
     fi
-    
+
     # 2. Clean registry source (extracted source code)
     SRC_DIR="$CARGO_REGISTRY/src"
     if [ -d "$SRC_DIR" ]; then
@@ -68,7 +65,7 @@ else
         rm -rf "${SRC_DIR:?}"/*
         echo "     ✅ Registry source cleaned"
     fi
-    
+
     # 3. Clean Git checkouts
     GIT_CHECKOUTS="$CARGO_GIT/checkouts"
     if [ -d "$GIT_CHECKOUTS" ]; then
@@ -76,7 +73,7 @@ else
         rm -rf "${GIT_CHECKOUTS:?}"/*
         echo "     ✅ Git checkouts cleaned"
     fi
-    
+
     # 4. Clean Git database
     GIT_DB="$CARGO_GIT/db"
     if [ -d "$GIT_DB" ]; then
@@ -112,7 +109,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo "$target_dir"
         fi
     done)
-    
+
     if [ -n "$TARGETS" ]; then
         TOTAL_SIZE=0
         echo "   Found the following target directories:"
@@ -122,7 +119,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
                 echo "     $dir ($size)"
             fi
         done
-        
+
         echo ""
         read -p "   Confirm delete all target directories? (y/N): " -n 1 -r
         echo

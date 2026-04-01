@@ -3,25 +3,22 @@
 # Wi-Fi Information Tool
 # Show current Wi-Fi connection details: SSID, BSSID, channel, band, RSSI, noise, security
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "📶 Wi-Fi Information"
 echo "===================="
 
-# Color definitions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-GRAY='\033[0;90m'
-NC='\033[0m'
+# Color definitions in common.sh
 
 PLATFORM="$(uname -s)"
 
 # ── Platform guard ────────────────────────────────────────────────────────────
 
-if [[ "$PLATFORM" != "Darwin" ]]; then
+if ! is_macos; then
     echo ""
     echo "ℹ️  This tool currently supports macOS only."
     echo ""
@@ -38,7 +35,7 @@ fi
 AIRPORT="/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport"
 
 if [ ! -x "$AIRPORT" ]; then
-    echo -e "${RED}✗ airport utility not found${NC}"
+    fail "airport utility not found"
     echo "  Expected: $AIRPORT"
     exit 1
 fi
@@ -57,7 +54,7 @@ fi
 WIFI_POWER=$(networksetup -getairportpower "$WIFI_IF" 2>/dev/null | awk '{print $NF}')
 if [ "$WIFI_POWER" = "Off" ]; then
     echo ""
-    echo -e "${YELLOW}⚠ Wi-Fi is turned off on interface $WIFI_IF${NC}"
+    warn "Wi-Fi is turned off on interface $WIFI_IF"
     echo ""
     echo "  Turn on: networksetup -setairportpower $WIFI_IF on"
     exit 0
@@ -69,7 +66,7 @@ AIRPORT_INFO=$("$AIRPORT" -I 2>/dev/null)
 
 if [ -z "$AIRPORT_INFO" ] || echo "$AIRPORT_INFO" | grep -q "AirPort: Off"; then
     echo ""
-    echo -e "${YELLOW}⚠ Not connected to a Wi-Fi network${NC}"
+    warn "Not connected to a Wi-Fi network"
     echo ""
     echo "Saved networks:"
     networksetup -listpreferredwirelessnetworks "$WIFI_IF" 2>/dev/null | head -10 || true

@@ -3,10 +3,14 @@
 # Steam Download Cache Cleanup Script
 # Cleans Steam download/app/http/depot caches on macOS and Linux
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 # Detect platform and locate Steam directory
-if [[ "$(uname -s)" == "Darwin" ]]; then
+if is_macos; then
     STEAM_DIR="$HOME/Library/Application Support/Steam"
 else
     # Linux: try common Steam paths in order
@@ -34,9 +38,9 @@ echo ""
 
 # Ensure Steam is installed
 if [ ! -d "$STEAM_DIR" ]; then
-    echo "❌ Steam directory not found at: $STEAM_DIR"
-    if [[ "$(uname -s)" != "Darwin" ]]; then
-        echo "   Common Linux paths tried:"
+    fail "Steam directory not found at: $STEAM_DIR"
+    if ! is_macos; then
+        info "Common Linux paths tried:"
         echo "     ~/.steam/steam"
         echo "     ~/.local/share/Steam"
         echo "     ~/snap/steam/common/.steam/steam"
@@ -47,7 +51,7 @@ fi
 
 # Advise user to quit Steam before cleaning
 if pgrep -f "[S]team" >/dev/null 2>&1; then
-    echo "⚠️  Steam appears to be running. Please quit Steam before cleaning."
+    warn "Steam appears to be running. Please quit Steam before cleaning."
     read -p "Proceed anyway? (y/N): " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -55,19 +59,6 @@ if pgrep -f "[S]team" >/dev/null 2>&1; then
         exit 0
     fi
 fi
-
-clean_dir() {
-    local path="$1"
-    local label="$2"
-    if [ -d "$path" ]; then
-        local size
-        size=$(du -sh "$path" 2>/dev/null | cut -f1)
-        echo "   → Cleaning $label ($size)"
-        rm -rf "${path:?}"/* 2>/dev/null || true
-    else
-        echo "   → $label not found, skipping"
-    fi
-}
 
 echo "📦 Targets:"
 clean_dir "$DOWNLOADING_DIR" "Steam downloading cache"
@@ -77,9 +68,9 @@ clean_dir "$DEPOT_CACHE" "Steam depot cache"
 clean_dir "$LOGS_DIR" "Steam logs (optional)"
 
 # Remove leftover partial downloads marker files
-PARTIALS=$(find "$STEAM_DIR/steamapps" -maxdepth 1 -name "*.part" 2>/dev/null)
+PARTIALS=$(find "$STEAM_DIR/steamapps" -maxdepth 1 -name "*.part" 2>/dev/null || true)
 if [ -n "$PARTIALS" ]; then
-    echo "   → Removing partial download markers"
+    info "Removing partial download markers"
     find "$STEAM_DIR/steamapps" -maxdepth 1 -name "*.part" -delete 2>/dev/null || true
 fi
 

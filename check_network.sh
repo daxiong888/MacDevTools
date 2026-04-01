@@ -3,31 +3,26 @@
 # Network Connection Check Script
 # Diagnose network connection issues
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "🌐 Network Connection Check Tool"
 echo "================================="
 
-# Color definitions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Check results
-pass() { echo -e "   ${GREEN}✓${NC} $1"; }
-fail() { echo -e "   ${RED}✗${NC} $1"; }
-warn() { echo -e "   ${YELLOW}⚠${NC} $1"; }
+# Check results (pass/fail/warn already defined in common.sh)
 
 # 1. Check network interface
 echo ""
 echo "📡 Network Interface Status:"
-if [[ "$(uname)" == "Darwin" ]]; then
+if is_macos; then
     # macOS
     ACTIVE_IF=$(route get default 2>/dev/null | grep interface | awk '{print $2}')
     if [ -n "$ACTIVE_IF" ]; then
         pass "Active interface: $ACTIVE_IF"
-        IP=$(ipconfig getifaddr "$ACTIVE_IF" 2>/dev/null)
+        IP=$(ipconfig getifaddr "$ACTIVE_IF" 2>/dev/null || true)
         if [ -n "$IP" ]; then
             pass "Local IP: $IP"
         fi
@@ -51,10 +46,10 @@ fi
 # 2. Check gateway connection
 echo ""
 echo "🚪 Gateway Connection:"
-if [[ "$(uname)" == "Darwin" ]]; then
-    GATEWAY=$(route -n get default 2>/dev/null | grep gateway | awk '{print $2}')
+if is_macos; then
+    GATEWAY=$(route -n get default 2>/dev/null | grep gateway | awk '{print $2}' || true)
 else
-    GATEWAY=$(ip route | grep default | awk '{print $3}' | head -1)
+    GATEWAY=$(ip route | grep default | awk '{print $3}' | head -1 || true)
 fi
 
 if [ -n "$GATEWAY" ]; then
@@ -73,10 +68,10 @@ echo ""
 echo "🔍 DNS Resolution:"
 
 # Get DNS servers
-if [[ "$(uname)" == "Darwin" ]]; then
-    DNS_SERVERS=$(scutil --dns | grep "nameserver\[" | awk '{print $3}' | head -3)
+if is_macos; then
+    DNS_SERVERS=$(scutil --dns | grep "nameserver\[" | awk '{print $3}' | head -3 || true)
 else
-    DNS_SERVERS=$(grep "nameserver" /etc/resolv.conf | awk '{print $2}' | head -3)
+    DNS_SERVERS=$(grep "nameserver" /etc/resolv.conf | awk '{print $2}' | head -3 || true)
 fi
 
 if [ -n "$DNS_SERVERS" ]; then
@@ -136,7 +131,7 @@ check_url() {
     local url=$1
     local name=$2
     local timeout=5
-    
+
     if command -v curl &> /dev/null; then
         HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout $timeout "$url" 2>/dev/null)
         TIME=$(curl -s -o /dev/null -w "%{time_total}" --connect-timeout $timeout "$url" 2>/dev/null)
@@ -205,7 +200,7 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     echo "📶 Network Speed Test:"
-    
+
     if command -v speedtest-cli &> /dev/null; then
         speedtest-cli --simple
     elif command -v curl &> /dev/null; then
@@ -215,7 +210,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "   Download speed: ${SPEED_MB} MB/s"
     else
         warn "speedtest-cli not installed, skipping speed test"
-        if [[ "$(uname -s)" == "Darwin" ]]; then
+        if is_macos; then
             echo "   Install: brew install speedtest-cli"
         else
             echo "   Install: pip3 install speedtest-cli  or  apt install speedtest-cli"
@@ -249,7 +244,7 @@ fi
 
 echo ""
 echo "💡 Tips:"
-if [[ "$(uname -s)" == "Darwin" ]]; then
+if is_macos; then
     echo "   - networksetup -listallhardwareports  List all network interfaces"
 else
     echo "   - ip link show                        List all network interfaces"

@@ -3,6 +3,9 @@
 # MacDevTools - Terminal Toolkit
 # Global command entry point
 
+# Error handling
+set -euo pipefail
+
 # Script directory (resolve symlinks to find actual install path)
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 while [ -h "$SCRIPT_PATH" ]; do
@@ -396,7 +399,7 @@ show_menu() {
 run_script() {
     local script=$1
     local script_path="$TOOL_DIR/$script"
-    
+
     if [ -f "$script_path" ]; then
         echo ""
         echo -e "${CYAN}▶ $(t running) $script${NC}"
@@ -407,7 +410,7 @@ run_script() {
     else
         echo -e "${RED}✗ $(t script_not_found): $script_path${NC}"
     fi
-    
+
     echo ""
     read -p "$(t prompt_press_enter)"
 }
@@ -419,51 +422,51 @@ clean_all() {
     echo ""
     read -p "Continue? (y/N): " -n 1 -r
     echo
-    
+
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "Cancelled"
         return
     fi
-    
+
     echo ""
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    
+
     # Homebrew
     if command -v brew &> /dev/null; then
         echo -e "\n${YELLOW}[1/10] Cleaning Homebrew...${NC}"
         brew cleanup -s 2>/dev/null || true
     fi
-    
+
     # pip
     if command -v pip3 &> /dev/null; then
         echo -e "\n${YELLOW}[2/10] Cleaning pip...${NC}"
         pip3 cache purge 2>/dev/null || true
     fi
-    
+
     # npm
     if command -v npm &> /dev/null; then
         echo -e "\n${YELLOW}[3/10] Cleaning npm...${NC}"
         npm cache clean --force 2>/dev/null || true
     fi
-    
+
     # pnpm
     if command -v pnpm &> /dev/null; then
         echo -e "\n${YELLOW}[4/10] Cleaning pnpm...${NC}"
         pnpm store prune 2>/dev/null || true
     fi
-    
+
     # yarn
     if command -v yarn &> /dev/null; then
         echo -e "\n${YELLOW}[5/10] Cleaning yarn...${NC}"
         yarn cache clean 2>/dev/null || true
     fi
-    
+
     # Go
     if command -v go &> /dev/null; then
         echo -e "\n${YELLOW}[6/10] Cleaning Go...${NC}"
         go clean -cache 2>/dev/null || true
     fi
-    
+
     # Cargo
     if command -v cargo &> /dev/null; then
         echo -e "\n${YELLOW}[7/10] Cleaning Cargo...${NC}"
@@ -497,7 +500,7 @@ clean_all() {
             rm -rf "$DERIVED_DATA"/* 2>/dev/null || true
         fi
     fi
-    
+
     echo ""
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo -e "${GREEN}✓ $(t menu_action_all)!${NC}"
@@ -663,7 +666,7 @@ cli_mode() {
             ;;
         lang)
             shift
-            case "$1" in
+            case "${1:-}" in
                 en|zh|ja)
                     LANG_UI="$1"
                     printf "%s\n" "$LANG_UI" > "$LANG_CONFIG_FILE" 2>/dev/null || true
@@ -688,10 +691,10 @@ interactive_mode() {
         clear_screen
         show_logo
         show_menu
-        
+
         read -p "$(t prompt_select): " -n 2 choice
         echo ""
-        
+
         case $choice in
             1)
                 run_script "clean_brew_cache.sh"

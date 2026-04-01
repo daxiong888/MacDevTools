@@ -3,19 +3,16 @@
 # Disk Usage Analyzer
 # Find the largest files and directories to identify disk hogs
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "💾 Disk Usage Analyzer"
 echo "======================"
 
-# Color definitions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-GRAY='\033[0;90m'
-NC='\033[0m'
+# Color definitions in common.sh
 
 PLATFORM="$(uname -s)"
 
@@ -23,7 +20,7 @@ PLATFORM="$(uname -s)"
 
 echo ""
 echo -e "${BOLD}📊 Disk Overview:${NC}"
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     df -h / | awk 'NR==2 {
         printf "   Filesystem : %s\n", $1
         printf "   Total      : %s\n", $2
@@ -47,7 +44,7 @@ echo -e "${BOLD}🏠 Home Directory Breakdown (~):${NC}"
 echo "   (scanning top-level directories...)"
 echo ""
 
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     # macOS: use -x to stay on same filesystem, skip special dirs
     du -sh "$HOME"/* 2>/dev/null \
         | sort -rh \
@@ -92,7 +89,7 @@ hotspots=(
     "$HOME/.sdkman"
 )
 
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     hotspots+=(
         "$HOME/Library/Caches"
         "$HOME/Library/Developer/Xcode/DerivedData"
@@ -135,7 +132,7 @@ fi
 
 # ── 6. macOS: ~/Downloads quick summary ──────────────────────────────────────
 
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     DOWNLOADS="$HOME/Downloads"
     if [ -d "$DOWNLOADS" ]; then
         echo ""
@@ -164,6 +161,6 @@ echo "   - 'tool cargo'   Clean Rust/Cargo cache"
 echo "   - 'tool gradle'  Clean Gradle cache"
 echo "   - 'tool maven'   Clean Maven local repository"
 echo "   - 'tool all'     Clean all known caches at once"
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     echo "   - 'tool xcode'   Clean Xcode DerivedData"
 fi

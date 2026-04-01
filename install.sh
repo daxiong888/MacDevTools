@@ -50,6 +50,7 @@ echo ""
 # Create directories (may need sudo if PREFIX is system-wide)
 mkdir -p "$BINDIR" 2>/dev/null || { echo -e "${YELLOW}⚠  mkdir failed, trying with sudo...${NC}"; sudo mkdir -p "$BINDIR"; }
 mkdir -p "$LIBDIR" 2>/dev/null || sudo mkdir -p "$LIBDIR"
+mkdir -p "$LIBDIR/lib" 2>/dev/null || sudo mkdir -p "$LIBDIR/lib"
 
 # Copy scripts
 install_files() {
@@ -59,6 +60,9 @@ install_files() {
        clean_logs.sh disk_usage.sh pkg_outdated.sh ssl_check.sh \
        traceroute_wrapper.sh wifi_info.sh sysinfo.sh top_processes.sh "$dst/"
     chmod +x "$dst"/*.sh
+    # Copy shared library
+    cp lib/common.sh "$dst/lib/"
+    chmod +x "$dst/lib/*.sh"
 }
 
 install_files "$LIBDIR" 2>/dev/null || {
@@ -66,6 +70,9 @@ install_files "$LIBDIR" 2>/dev/null || {
         clean_logs.sh disk_usage.sh pkg_outdated.sh ssl_check.sh \
         traceroute_wrapper.sh wifi_info.sh sysinfo.sh top_processes.sh "$LIBDIR/"
     sudo chmod +x "$LIBDIR"/*.sh
+    sudo mkdir -p "$LIBDIR/lib"
+    sudo cp lib/common.sh "$LIBDIR/lib/"
+    sudo chmod +x "$LIBDIR/lib/*.sh"
 }
 
 # Install launcher (tool resolves script dir dynamically at runtime)

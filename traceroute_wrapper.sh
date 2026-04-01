@@ -3,27 +3,24 @@
 # Traceroute Wrapper
 # Run traceroute with colorized output and latency anomaly detection
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "🛤️  Traceroute Wrapper"
 echo "====================="
 
-# Color definitions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-GRAY='\033[0;90m'
+# Color definitions in common.sh (adding ORANGE for this script)
 ORANGE='\033[38;5;208m'
-NC='\033[0m'
 
 PLATFORM="$(uname -s)"
 
 # Check for traceroute
-if ! command -v traceroute &> /dev/null; then
-    echo -e "${RED}✗ Error: traceroute is not installed${NC}"
-    if [[ "$PLATFORM" == "Darwin" ]]; then
+if ! command_exists traceroute; then
+    fail "Error: traceroute is not installed"
+    if is_macos; then
         echo "   Install: traceroute comes with macOS by default"
     else
         echo "   Install: sudo apt install traceroute  or  sudo yum install traceroute"
@@ -58,7 +55,7 @@ if [ $# -eq 0 ]; then
     fi
 else
     HOST="$1"
-    [ -n "$2" ] && MAX_HOPS="$2"
+    [ -n "${2:-}" ] && MAX_HOPS="$2"
 fi
 
 # Strip scheme and path (accept URLs)
@@ -82,7 +79,7 @@ REACHED=false
 ANOMALY_THRESHOLD=50   # ms jump that is considered anomalous
 
 # Build command based on platform
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     TR_CMD="traceroute -n -m $MAX_HOPS -w $TIMEOUT $HOST"
 else
     TR_CMD="traceroute -n -m $MAX_HOPS -w $TIMEOUT $HOST"

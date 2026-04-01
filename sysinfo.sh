@@ -3,33 +3,27 @@
 # System Information Summary
 # One-screen snapshot: CPU, memory, disk, GPU, battery, OS, uptime
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "🖥️  System Information"
 echo "======================"
 
-# Color definitions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-GRAY='\033[0;90m'
-NC='\033[0m'
+# Color definitions in common.sh
 
 PLATFORM="$(uname -s)"
 
-# Helper: print a labelled row
-row() {
-    printf "   ${GRAY}%-22s${NC} %s\n" "$1" "$2"
-}
+# row() function defined in common.sh
 
 # ── OS Info ───────────────────────────────────────────────────────────────────
 
 echo ""
 echo -e "${BOLD}🍎 Operating System:${NC}"
 
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     OS_NAME=$(sw_vers -productName 2>/dev/null)
     OS_VER=$(sw_vers -productVersion 2>/dev/null)
     OS_BUILD=$(sw_vers -buildVersion 2>/dev/null)
@@ -57,7 +51,7 @@ row "Uptime" "$UPTIME_RAW"
 echo ""
 echo -e "${BOLD}⚙️  CPU:${NC}"
 
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     CPU_BRAND=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || \
                 system_profiler SPHardwareDataType 2>/dev/null | grep "Chip\|Processor Name" | head -1 | awk -F': ' '{print $2}' | xargs)
     CPU_CORES=$(sysctl -n hw.physicalcpu 2>/dev/null)
@@ -86,7 +80,7 @@ row "Load Average" "$LOAD"
 echo ""
 echo -e "${BOLD}🧠 Memory:${NC}"
 
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     TOTAL_RAM_BYTES=$(sysctl -n hw.memsize 2>/dev/null)
     TOTAL_RAM=$(echo "$TOTAL_RAM_BYTES" | awk '{printf "%.1f GB", $1/1073741824}')
 
@@ -163,7 +157,7 @@ fi
 echo ""
 echo -e "${BOLD}💾 Storage:${NC}"
 
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     df -h | grep -E "^/dev" | while IFS= read -r dline; do
         FS=$(echo "$dline"    | awk '{print $1}')
         SIZE=$(echo "$dline"  | awk '{print $2}')
@@ -194,7 +188,7 @@ fi
 echo ""
 echo -e "${BOLD}🎮 GPU:${NC}"
 
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     system_profiler SPDisplaysDataType 2>/dev/null \
         | grep -E "Chipset Model|VRAM|Resolution|Metal" \
         | sed 's/^\s*//' \
@@ -215,7 +209,7 @@ fi
 
 # ── Battery (macOS only) ──────────────────────────────────────────────────────
 
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     BAT_INFO=$(system_profiler SPPowerDataType 2>/dev/null)
     if echo "$BAT_INFO" | grep -q "Cycle Count"; then
         echo ""
@@ -246,7 +240,7 @@ fi
 echo ""
 echo -e "${BOLD}🌐 Active Network Interfaces:${NC}"
 
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     ifconfig 2>/dev/null | awk '
         /^[a-z]/ { iface=$1 }
         /inet / && !/127.0.0.1/ { printf "   %-12s %s\n", iface, $2 }
@@ -266,6 +260,6 @@ echo ""
 echo "💡 Tips:"
 echo "   - 'tool disk'    In-depth disk usage analysis"
 echo "   - 'tool topproc' Top CPU/memory processes"
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     echo "   - 'tool wifi'    Wi-Fi signal & channel details"
 fi

@@ -3,36 +3,25 @@
 # Log File Cleanup Script
 # Clean system and application log files to free up disk space
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "📋 Log File Cleanup Tool"
 echo "========================"
 
-# Color definitions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# Color and pass/fail/warn functions defined in common.sh
 
 PLATFORM="$(uname -s)"
 TOTAL_FREED=0
 
-# Helper: get directory size in bytes (cross-platform)
-dir_bytes() {
-    if [[ "$PLATFORM" == "Darwin" ]]; then
-        du -sk "$1" 2>/dev/null | awk '{print $1 * 1024}' || echo 0
-    else
-        du -sb "$1" 2>/dev/null | awk '{print $1}' || echo 0
-    fi
-}
-
-dir_human() {
-    du -sh "$1" 2>/dev/null | cut -f1 || echo "0B"
-}
+# dir_bytes() and dir_human() defined in common.sh
 
 # ── 1. Application logs (macOS: ~/Library/Logs) ──────────────────────────────
 
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     echo ""
     echo "📁 Application Logs (~/Library/Logs):"
     LOG_DIR="$HOME/Library/Logs"
@@ -145,7 +134,7 @@ fi
 
 # ── 7. Xcode device logs (macOS) ─────────────────────────────────────────────
 
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     XCODE_DEVICE_LOGS="$HOME/Library/Logs/CoreSimulator"
     echo ""
     echo "📱 iOS Simulator Logs (~/Library/Logs/CoreSimulator):"
@@ -172,7 +161,7 @@ echo ""
 echo "✅ Log cleanup complete!"
 echo ""
 echo "💡 Tips:"
-if [[ "$PLATFORM" == "Darwin" ]]; then
+if is_macos; then
     echo "   - Open Console.app to browse live logs"
     echo "   - 'sudo log collect' captures a full diagnostic archive"
 else

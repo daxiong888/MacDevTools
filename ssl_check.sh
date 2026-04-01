@@ -3,27 +3,20 @@
 # SSL Certificate Checker
 # Inspect SSL/TLS certificate details, expiry, and chain for one or more domains
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "🔐 SSL Certificate Checker"
 echo "=========================="
 
-# Color definitions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-GRAY='\033[0;90m'
-NC='\033[0m'
-
-pass() { echo -e "   ${GREEN}✓${NC} $1"; }
-fail() { echo -e "   ${RED}✗${NC} $1"; }
-warn() { echo -e "   ${YELLOW}⚠${NC} $1"; }
+# pass/fail/warn functions defined in common.sh
 
 # Check for openssl
 if ! command -v openssl &> /dev/null; then
-    echo -e "${RED}✗ Error: openssl is not installed${NC}"
+    fail "Error: openssl is not installed"
     exit 1
 fi
 

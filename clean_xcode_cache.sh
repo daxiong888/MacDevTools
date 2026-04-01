@@ -3,25 +3,22 @@
 # Xcode Cache Cleanup Script
 # Clean Xcode build cache, simulator data, etc.
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "🔨 Xcode Cache Cleanup Tool"
 echo "==========================="
 
 # Check if running on macOS
-if [[ "$(uname)" != "Darwin" ]]; then
-    echo "❌ Error: This script only supports macOS"
+if ! is_macos; then
+    fail "Error: This script only supports macOS"
     exit 1
 fi
 
-# Calculate directory size
-get_size() {
-    if [ -d "$1" ]; then
-        du -sh "$1" 2>/dev/null | cut -f1
-    else
-        echo "0B"
-    fi
-}
+# get_size() defined in common.sh
 
 # Show status before cleanup
 echo ""
@@ -83,7 +80,7 @@ if [ -d "$SPM_CACHE" ]; then
 fi
 
 # 6. Clean unavailable simulators (requires xcrun)
-if command -v xcrun &> /dev/null; then
+if command_exists xcrun; then
     echo "   → Cleaning unavailable simulators..."
     xcrun simctl delete unavailable 2>/dev/null || true
     echo "     ✅ Unavailable simulators cleaned"

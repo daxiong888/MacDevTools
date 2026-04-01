@@ -3,13 +3,13 @@
 # Port Usage Killer Tool
 # View port usage and optionally kill occupying processes
 
-# Color definitions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
+# Color definitions in common.sh
 
 # Show help
 show_help() {
@@ -34,41 +34,41 @@ show_help() {
 # Get port usage info
 get_port_info() {
     local port=$1
-    
-    if [[ "$(uname)" == "Darwin" ]]; then
+
+    if is_macos; then
         # macOS
-        lsof -i ":$port" 2>/dev/null
+        lsof -i ":$port" 2>/dev/null || true
     else
         # Linux
-        lsof -i ":$port" 2>/dev/null || netstat -tlnp 2>/dev/null | grep ":$port"
+        lsof -i ":$port" 2>/dev/null || netstat -tlnp 2>/dev/null | grep ":$port" || true
     fi
 }
 
 # Get process details
 get_process_details() {
     local pid=$1
-    
+
     echo -e "${CYAN}Process Details:${NC}"
     echo "   PID: $pid"
-    
-    if [[ "$(uname)" == "Darwin" ]]; then
+
+    if is_macos; then
         # macOS
-        PROC_NAME=$(ps -p "$pid" -o comm= 2>/dev/null)
-        PROC_USER=$(ps -p "$pid" -o user= 2>/dev/null)
-        PROC_CMD=$(ps -p "$pid" -o command= 2>/dev/null)
-        PROC_START=$(ps -p "$pid" -o lstart= 2>/dev/null)
-        PROC_CPU=$(ps -p "$pid" -o %cpu= 2>/dev/null)
-        PROC_MEM=$(ps -p "$pid" -o %mem= 2>/dev/null)
+        PROC_NAME=$(ps -p "$pid" -o comm= 2>/dev/null || true)
+        PROC_USER=$(ps -p "$pid" -o user= 2>/dev/null || true)
+        PROC_CMD=$(ps -p "$pid" -o command= 2>/dev/null || true)
+        PROC_START=$(ps -p "$pid" -o lstart= 2>/dev/null || true)
+        PROC_CPU=$(ps -p "$pid" -o %cpu= 2>/dev/null || true)
+        PROC_MEM=$(ps -p "$pid" -o %mem= 2>/dev/null || true)
     else
         # Linux
-        PROC_NAME=$(ps -p "$pid" -o comm= 2>/dev/null)
-        PROC_USER=$(ps -p "$pid" -o user= 2>/dev/null)
-        PROC_CMD=$(ps -p "$pid" -o cmd= 2>/dev/null)
-        PROC_START=$(ps -p "$pid" -o lstart= 2>/dev/null)
-        PROC_CPU=$(ps -p "$pid" -o %cpu= 2>/dev/null)
-        PROC_MEM=$(ps -p "$pid" -o %mem= 2>/dev/null)
+        PROC_NAME=$(ps -p "$pid" -o comm= 2>/dev/null || true)
+        PROC_USER=$(ps -p "$pid" -o user= 2>/dev/null || true)
+        PROC_CMD=$(ps -p "$pid" -o cmd= 2>/dev/null || true)
+        PROC_START=$(ps -p "$pid" -o lstart= 2>/dev/null || true)
+        PROC_CPU=$(ps -p "$pid" -o %cpu= 2>/dev/null || true)
+        PROC_MEM=$(ps -p "$pid" -o %mem= 2>/dev/null || true)
     fi
-    
+
     echo "   Name:    $PROC_NAME"
     echo "   User:    $PROC_USER"
     echo "   CPU:     ${PROC_CPU}%"
@@ -81,13 +81,13 @@ get_process_details() {
 kill_process() {
     local pid=$1
     local force=$2
-    
+
     if [ "$force" == "force" ]; then
         kill -9 "$pid" 2>/dev/null
     else
         kill "$pid" 2>/dev/null
     fi
-    
+
     return $?
 }
 
@@ -95,32 +95,32 @@ kill_process() {
 check_port() {
     local port=$1
     local auto_kill=$2
-    
+
     echo -e "${BLUE}🔍 Checking port $port${NC}"
     echo ""
-    
+
     # Get usage info
     PORT_INFO=$(get_port_info "$port")
-    
+
     if [ -z "$PORT_INFO" ]; then
         echo -e "${GREEN}✓ Port $port is not in use${NC}"
         return 0
     fi
-    
+
     echo -e "${YELLOW}⚠ Port $port is in use${NC}"
     echo ""
     echo "$PORT_INFO" | head -1
     echo "$PORT_INFO" | tail -n +2
     echo ""
-    
+
     # Get PIDs
     PIDS=$(echo "$PORT_INFO" | tail -n +2 | awk '{print $2}' | sort -u)
-    
+
     for pid in $PIDS; do
         if [ -n "$pid" ] && [ "$pid" != "PID" ]; then
             echo ""
             get_process_details "$pid"
-            
+
             if [ "$auto_kill" == "auto" ]; then
                 echo ""
                 echo -e "${RED}→ Killing process $pid...${NC}"
@@ -149,7 +149,7 @@ check_port() {
                                 kill_process "$pid" "force"
                             fi
                         fi
-                        
+
                         if ! ps -p "$pid" &>/dev/null; then
                             echo -e "${GREEN}✓ Process terminated${NC}"
                         fi
@@ -167,16 +167,16 @@ check_port() {
 list_all_ports() {
     echo -e "${BLUE}📋 All Listening Ports${NC}"
     echo ""
-    
-    if [[ "$(uname)" == "Darwin" ]]; then
+
+    if is_macos; then
         # macOS
         echo -e "${CYAN}COMMAND          PID   USER   PORT${NC}"
         lsof -iTCP -sTCP:LISTEN -P -n 2>/dev/null | tail -n +2 | \
             awk '{split($9,a,":"); printf "%-16s %-5s %-6s %s\n", $1, $2, $3, a[length(a)]}' | \
-            sort -t' ' -k4 -n | uniq
+            sort -t' ' -k4 -n | uniq || true
     else
         # Linux
-        netstat -tlnp 2>/dev/null || ss -tlnp 2>/dev/null
+        netstat -tlnp 2>/dev/null || ss -tlnp 2>/dev/null || true
     fi
 }
 
@@ -184,7 +184,7 @@ list_all_ports() {
 show_common_ports() {
     echo -e "${BLUE}🔌 Common Development Ports Check${NC}"
     echo ""
-    
+
     declare -A PORTS
     PORTS=(
         [22]="SSH"
@@ -204,20 +204,20 @@ show_common_ports() {
         [9000]="PHP-FPM"
         [27017]="MongoDB"
     )
-    
+
     printf "${CYAN}%-8s %-18s %-10s %s${NC}\n" "Port" "Service" "Status" "Process"
     echo "─────────────────────────────────────────────────"
-    
+
     for port in $(echo "${!PORTS[@]}" | tr ' ' '\n' | sort -n); do
         service="${PORTS[$port]}"
-        
+
         # Check port
-        if [[ "$(uname)" == "Darwin" ]]; then
-            PROC=$(lsof -i ":$port" -sTCP:LISTEN 2>/dev/null | tail -n +2 | head -1 | awk '{print $1}')
+        if is_macos; then
+            PROC=$(lsof -i ":$port" -sTCP:LISTEN 2>/dev/null | tail -n +2 | head -1 | awk '{print $1}' || true)
         else
-            PROC=$(lsof -i ":$port" 2>/dev/null | tail -n +2 | head -1 | awk '{print $1}')
+            PROC=$(lsof -i ":$port" 2>/dev/null | tail -n +2 | head -1 | awk '{print $1}' || true)
         fi
-        
+
         if [ -n "$PROC" ]; then
             printf "%-8s %-18s ${YELLOW}%-10s${NC} %s\n" "$port" "$service" "IN USE" "$PROC"
         else
@@ -235,10 +235,10 @@ interactive_mode() {
     echo "  c - Show common ports"
     echo "  q - Quit"
     echo ""
-    
+
     while true; do
         read -p "Enter port number: " input
-        
+
         case "$input" in
             l|L)
                 echo ""
@@ -267,7 +267,7 @@ interactive_mode() {
 }
 
 # Main logic
-case "$1" in
+case "${1:-}" in
     -h|--help)
         show_help
         ;;
@@ -278,7 +278,7 @@ case "$1" in
         show_common_ports
         ;;
     -k|--kill)
-        if [ -z "$2" ]; then
+        if [ -z "${2:-}" ]; then
             echo "Error: Please specify port number"
             echo "Usage: $0 -k <port>"
             exit 1

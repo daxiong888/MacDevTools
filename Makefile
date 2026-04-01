@@ -16,10 +16,13 @@ install:
 	@echo "Installing MacDevTools..."
 	@mkdir -p $(BINDIR)
 	@mkdir -p $(LIBDIR)
+	@mkdir -p $(LIBDIR)/lib
 	@cp $(SCRIPTS) $(LIBDIR)/
+	@cp lib/common.sh $(LIBDIR)/lib/
 	@sed 's|TOOL_DIR="$$HOME/ShellTools"|TOOL_DIR="$(LIBDIR)"|g' tool > $(BINDIR)/tool
 	@chmod +x $(BINDIR)/tool
 	@chmod +x $(LIBDIR)/*.sh
+	@chmod +x $(LIBDIR)/lib/*.sh
 	@echo "✓ Installed to $(BINDIR)/tool"
 
 uninstall:

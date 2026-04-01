@@ -3,17 +3,14 @@
 # Top Processes Viewer
 # Show top CPU or memory consuming processes in a formatted table
 
-set -e
+set -euo pipefail
 
-# Color definitions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-BOLD='\033[1m'
-GRAY='\033[0;90m'
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
+# Color definitions in common.sh (adding ORANGE for this script)
 ORANGE='\033[38;5;208m'
-NC='\033[0m'
 
 PLATFORM="$(uname -s)"
 
@@ -45,7 +42,20 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         -c) SORT_BY="cpu"; shift ;;
         -m) SORT_BY="mem"; shift ;;
-        -n) TOP_N="${2:-15}"; shift 2 ;;
+        -n)
+            if [ $# -lt 2 ]; then
+                echo "Error: Please specify a count after -n"
+                show_usage
+                exit 1
+            fi
+            TOP_N="${2:-15}"
+            if ! [[ "$TOP_N" =~ ^[0-9]+$ ]] || [ "$TOP_N" -le 0 ]; then
+                echo "Invalid count: $TOP_N"
+                show_usage
+                exit 1
+            fi
+            shift 2
+            ;;
         -w) LOOP=true; shift ;;
         -h|--help) show_usage; exit 0 ;;
         *) echo "Unknown option: $1"; show_usage; exit 1 ;;
@@ -56,6 +66,10 @@ done
 
 render() {
     local sort_key="$1"
+    local ps_out=""
+    local row_color=""
+    local total_procs="0"
+    local cpu_idle="?"
 
     if [[ "$sort_key" == "cpu" ]]; then
         SORT_COL=3
@@ -72,66 +86,77 @@ render() {
         "PID" "USER" "%CPU" "%MEM" "VSZ(MB)" "COMMAND"
     echo -e "${GRAY}  ───────  ──────────  ──────  ──────  ────────  ──────────────────────────────${NC}"
 
-    if [[ "$PLATFORM" == "Darwin" ]]; then
+    if is_macos; then
         # macOS ps: pid user %cpu %mem vsz comm
-        PS_OUT=$(ps -Ao pid,user,%cpu,%mem,vsz,comm 2>/dev/null | tail -n +2 \
+        ps_out=$(ps -Ao pid,user,%cpu,%mem,vsz,comm 2>/dev/null | tail -n +2 \
             | sort -k"$SORT_COL" -rn \
-            | head -"$TOP_N")
+            | head -"$TOP_N" || true)
     else
-        PS_OUT=$(ps -eo pid,user,%cpu,%mem,vsz,comm --no-headers 2>/dev/null \
+        ps_out=$(ps -eo pid,user,%cpu,%mem,vsz,comm --no-headers 2>/dev/null \
             | sort -k"$SORT_COL" -rn \
-            | head -"$TOP_N")
+            | head -"$TOP_N" || true)
     fi
 
-    echo "$PS_OUT" | while IFS= read -r pline; do
-        PID=$(echo  "$pline" | awk '{print $1}')
-        USER=$(echo "$pline" | awk '{print $2}')
-        CPU=$(echo  "$pline" | awk '{print $3}')
-        MEM=$(echo  "$pline" | awk '{print $4}')
-        VSZ=$(echo  "$pline" | awk '{print $5}')
-        CMD=$(echo  "$pline" | awk '{print $6}')
+    if [ -z "$ps_out" ]; then
+        warn "No process data available from ps"
+        echo -e "  ${GRAY}(This can happen in restricted environments.)${NC}"
+    else
+        while IFS= read -r pline; do
+            local pid="" user="" cpu="" mem="" vsz="" cmd=""
+            local vsz_mb="?"
+            local cpu_int="0"
+            local mem_int="0"
 
-        # Convert VSZ from KB to MB
-        VSZ_MB=$(echo "$VSZ" | awk '{printf "%.0f", $1/1024}')
+            [ -z "$pline" ] && continue
+            read -r pid user cpu mem vsz cmd <<< "$pline"
+            [ -z "$pid" ] && continue
 
-        # Color by metric
-        CPU_INT=${CPU%.*}
-        MEM_INT=${MEM%.*}
-
-        if [ "$sort_key" = "cpu" ]; then
-            if   [ "${CPU_INT:-0}" -ge 50 ]; then ROW_COLOR="$RED"
-            elif [ "${CPU_INT:-0}" -ge 20 ]; then ROW_COLOR="$ORANGE"
-            elif [ "${CPU_INT:-0}" -ge 5  ]; then ROW_COLOR="$YELLOW"
-            else                                  ROW_COLOR="$NC"
+            # Convert VSZ from KB to MB when ps returns a numeric size.
+            if [[ "$vsz" =~ ^[0-9]+$ ]]; then
+                vsz_mb=$(( vsz / 1024 ))
             fi
-        else
-            if   [ "${MEM_INT:-0}" -ge 10 ]; then ROW_COLOR="$RED"
-            elif [ "${MEM_INT:-0}" -ge 5  ]; then ROW_COLOR="$ORANGE"
-            elif [ "${MEM_INT:-0}" -ge 2  ]; then ROW_COLOR="$YELLOW"
-            else                                  ROW_COLOR="$NC"
-            fi
-        fi
 
-        # Highlight active metric column
-        if [ "$sort_key" = "cpu" ]; then
-            printf "  ${ROW_COLOR}%-7s  %-10s  ${BOLD}%6s${NC}${ROW_COLOR}  %6s  %8s  %-30s${NC}\n" \
-                "$PID" "${USER:0:10}" "${CPU}%" "${MEM}%" "$VSZ_MB" "${CMD:0:30}"
-        else
-            printf "  ${ROW_COLOR}%-7s  %-10s  %6s  ${BOLD}%6s${NC}${ROW_COLOR}  %8s  %-30s${NC}\n" \
-                "$PID" "${USER:0:10}" "${CPU}%" "${MEM}%" "$VSZ_MB" "${CMD:0:30}"
-        fi
-    done
+            # Color by metric
+            cpu_int=${cpu%.*}
+            mem_int=${mem%.*}
+
+            if [ "$sort_key" = "cpu" ]; then
+                if   [ "${cpu_int:-0}" -ge 50 ]; then row_color="$RED"
+                elif [ "${cpu_int:-0}" -ge 20 ]; then row_color="$ORANGE"
+                elif [ "${cpu_int:-0}" -ge 5  ]; then row_color="$YELLOW"
+                else                                  row_color="$NC"
+                fi
+            else
+                if   [ "${mem_int:-0}" -ge 10 ]; then row_color="$RED"
+                elif [ "${mem_int:-0}" -ge 5  ]; then row_color="$ORANGE"
+                elif [ "${mem_int:-0}" -ge 2  ]; then row_color="$YELLOW"
+                else                                  row_color="$NC"
+                fi
+            fi
+
+            # Highlight active metric column
+            if [ "$sort_key" = "cpu" ]; then
+                printf "  ${row_color}%-7s  %-10s  ${BOLD}%6s${NC}${row_color}  %6s  %8s  %-30s${NC}\n" \
+                    "$pid" "${user:0:10}" "${cpu}%" "${mem}%" "$vsz_mb" "${cmd:0:30}"
+            else
+                printf "  ${row_color}%-7s  %-10s  %6s  ${BOLD}%6s${NC}${row_color}  %8s  %-30s${NC}\n" \
+                    "$pid" "${user:0:10}" "${cpu}%" "${mem}%" "$vsz_mb" "${cmd:0:30}"
+            fi
+        done <<< "$ps_out"
+    fi
 
     echo -e "${GRAY}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
     # System summary row
-    if [[ "$PLATFORM" == "Darwin" ]]; then
-        TOTAL_PROCS=$(ps -A 2>/dev/null | tail -n +2 | wc -l | tr -d ' ')
-        CPU_IDLE=$(top -l 1 -n 0 2>/dev/null | grep "CPU usage" | awk '{print $7}' | tr -d '%' || echo "?")
-        echo -e "  ${GRAY}Total processes: $TOTAL_PROCS  |  CPU idle: ${CPU_IDLE}%${NC}"
+    if is_macos; then
+        total_procs=$(ps -A 2>/dev/null | tail -n +2 | wc -l | tr -d ' ' || true)
+        [ -z "$total_procs" ] && total_procs=0
+        cpu_idle=$(top -l 1 -n 0 2>/dev/null | grep "CPU usage" | awk '{print $7}' | tr -d '%' || echo "?")
+        echo -e "  ${GRAY}Total processes: $total_procs  |  CPU idle: ${cpu_idle}%${NC}"
     else
-        TOTAL_PROCS=$(ps -e 2>/dev/null | wc -l | tr -d ' ')
-        echo -e "  ${GRAY}Total processes: $TOTAL_PROCS${NC}"
+        total_procs=$(ps -e 2>/dev/null | wc -l | tr -d ' ' || true)
+        [ -z "$total_procs" ] && total_procs=0
+        echo -e "  ${GRAY}Total processes: $total_procs${NC}"
     fi
 }
 

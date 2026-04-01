@@ -3,19 +3,23 @@
 # Docker Cache Cleanup Script
 # Clean Docker images, containers, volumes, networks and build cache
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "🐳 Docker Cache Cleanup Tool"
 echo "============================"
 
 # Check if Docker is installed and running
-if ! command -v docker &> /dev/null; then
-    echo "❌ Error: Docker is not installed"
+if ! command_exists docker; then
+    fail "Error: Docker is not installed"
     exit 1
 fi
 
 if ! docker info &> /dev/null; then
-    echo "❌ Error: Docker is not running, please start Docker first"
+    fail "Error: Docker is not running, please start Docker first"
     exit 1
 fi
 

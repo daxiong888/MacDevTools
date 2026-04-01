@@ -3,14 +3,18 @@
 # Gradle Cache Cleanup Script
 # Clean Gradle caches, build outputs, and daemon files
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "🐘 Gradle Cache Cleanup Tool"
 echo "============================"
 
 # Check if Gradle is installed (optional; ~/.gradle can exist without gradle on PATH)
-if command -v gradle &> /dev/null; then
-    GRADLE_VERSION=$(gradle --version 2>/dev/null | grep "^Gradle" | head -1)
+if command_exists gradle; then
+    GRADLE_VERSION=$(gradle --version 2>/dev/null | grep "^Gradle" | head -1 || true)
     echo "   $GRADLE_VERSION"
 else
     echo "   (gradle not on PATH — cleaning ~/.gradle directly)"

@@ -3,14 +3,18 @@
 # Maven Local Repository Cleanup Script
 # Clean old snapshots, unused jars, and stale metadata from ~/.m2
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "🪶 Maven Cache Cleanup Tool"
 echo "==========================="
 
 # Check if Maven is installed (optional; ~/.m2 can exist without mvn on PATH)
-if command -v mvn &> /dev/null; then
-    MVN_VERSION=$(mvn --version 2>/dev/null | head -1)
+if command_exists mvn; then
+    MVN_VERSION=$(mvn --version 2>/dev/null | head -1 || true)
     echo "   Maven: $MVN_VERSION"
 else
     echo "   (mvn not on PATH — cleaning ~/.m2 directly)"

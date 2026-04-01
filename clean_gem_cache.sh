@@ -3,14 +3,18 @@
 # Ruby Gems Cache Cleanup Script
 # Clean Ruby gems cache and old versions
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "💎 Ruby Gems Cache Cleanup Tool"
 echo "================================"
 
 # Check if gem is installed
-if ! command -v gem &> /dev/null; then
-    echo "❌ Error: Ruby/gem is not installed"
+if ! command_exists gem; then
+    fail "Error: Ruby/gem is not installed"
     exit 1
 fi
 
@@ -20,17 +24,10 @@ echo "Ruby version: $(ruby --version | awk '{print $2}')"
 echo "Gem version:  $(gem --version)"
 
 # Get gem directory
-GEM_HOME=$(gem environment gemdir 2>/dev/null)
+GEM_HOME=$(gem environment gemdir 2>/dev/null || true)
 GEM_CACHE="$GEM_HOME/cache"
 
-# Calculate directory size
-get_size() {
-    if [ -d "$1" ]; then
-        du -sh "$1" 2>/dev/null | cut -f1
-    else
-        echo "0B"
-    fi
-}
+# get_size() defined in common.sh
 
 # Show status before cleanup
 echo ""
@@ -111,7 +108,7 @@ if [ -d "$HOME/.rvm/archives" ]; then
 fi
 
 # 7. Clean CocoaPods cache (if installed)
-if command -v pod &> /dev/null; then
+if command_exists pod; then
     POD_CACHE="$HOME/Library/Caches/CocoaPods"
     if [ -d "$POD_CACHE" ]; then
         POD_SIZE=$(get_size "$POD_CACHE")

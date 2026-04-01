@@ -3,24 +3,16 @@
 # Package Outdated Checker
 # Summarize outdated packages across all installed package managers
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "📦 Package Outdated Checker"
 echo "==========================="
 
-# Color definitions
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-GRAY='\033[0;90m'
-BOLD='\033[1m'
-NC='\033[0m'
-
-pass()  { echo -e "   ${GREEN}✓${NC} $1"; }
-fail()  { echo -e "   ${RED}✗${NC} $1"; }
-warn()  { echo -e "   ${YELLOW}⚠${NC} $1"; }
-info()  { echo -e "   ${GRAY}→${NC} $1"; }
+# pass/fail/warn/info functions defined in common.sh
 
 TOTAL_OUTDATED=0
 
@@ -202,7 +194,7 @@ fi
 
 # ── macOS system updates ───────────────────────────────────────────────────────
 
-if [[ "$(uname -s)" == "Darwin" ]]; then
+if is_macos; then
     echo ""
     echo -e "${BOLD}🍎 macOS System Updates:${NC}"
     info "Checking for software updates..."

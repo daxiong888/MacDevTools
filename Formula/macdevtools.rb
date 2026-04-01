@@ -11,6 +11,7 @@ class Macdevtools < Formula
   def install
     libexec.install Dir["*.sh"]
     libexec.install "tool"
+    libexec.install "lib"
     bin.install_symlink libexec/"tool"
   end
 

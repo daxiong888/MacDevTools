@@ -3,14 +3,18 @@
 # Homebrew Cache Cleanup Script
 # Clean brew download cache and old versions
 
-set -e
+set -euo pipefail
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 echo "🍺 Homebrew Cache Cleanup Tool"
 echo "=============================="
 
 # Check if brew is installed
-if ! command -v brew &> /dev/null; then
-    echo "❌ Error: Homebrew is not installed"
+if ! command_exists brew; then
+    fail "Error: Homebrew is not installed"
     exit 1
 fi
 
